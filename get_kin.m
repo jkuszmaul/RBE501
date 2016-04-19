@@ -27,7 +27,10 @@ function [poses, vels, jacobians] = get_kin(params, t)
       isrot(i) = 1;
     end
   end
-  vels = simplify(diff(poses, t));
+  vels = cell(N, 1);
+  for i = 1:N
+    vels{i} = simplify(diff(poses{i}, t));
+  end
   zs = sym('zs', [3 N]);
   for i = 1:N
     Ri = poses{i};
