@@ -1,7 +1,9 @@
 function test()
-  [step, kin, jac, inv_vel, inv_dyn] = gen_test_model();
+  %[step, kin, jac, inv_vel, inv_dyn] = gen_test_model();
+  [step, kin, jac, inv_vel, inv_dyn] = test_model_6dof();
   dt = 0.03;
   goal_vel = [5.1;-10;-15];
+  goal_vel = [4;3; 4; 2; 4;-5];
   maxtau = 100;
 
   [goalp, goalv] = get_goal(goal_vel);
@@ -27,16 +29,19 @@ function test()
   [poses, vels, absvels] = run_sim(step, u, dt);
   vels
   absvels
+  u
 
+  absp = kin(poses(:, 1));
+  Plot = plot3(absp(1, :), absp(2, :), absp(3, :), '-o');
   while true
-    absp = kin(poses(:, 1));
-    Plot = plot(absp(1, :), absp(2, :));
     for pos = poses
       absp = kin(pos);
       set(Plot, 'XData', absp(1, :));
       set(Plot, 'YData', absp(2, :));
+      set(Plot, 'ZData', absp(3, :));
       xlim([-3 3]);
-      ylim([-3 2]);
+      ylim([-3 3]);
+      zlim([-2 2]);
       drawnow
     end
     pause(1)
@@ -45,8 +50,7 @@ function test()
   function minval = obj_fun(u)
     [poses, vels, absvels] = run_sim(step, u, dt);
     minval = absvels(:, end) - goal_vel;
-    minval
-    minval = minval(1:3);
+    minval;
     if isnan(minval)
       minval = 0
       return
@@ -62,11 +66,26 @@ function test()
     minval
   end
 
+  function w = wrapToPi(t)
+    w = eval(t);
+    while (max(w) > pi)
+      w(w>pi) = w(w>pi) - 2*pi;
+    end
+    while (min(w) < -pi)
+      w(w<-pi) = w(w<-pi) + 2*pi;
+    end
+  end
+
   function [q, dq] = get_goal(v)
   % Returns a valid goal pose for a goal velocity.
-    [qv, dqv] = inv_vel(v);
-    q = [2;2;2];
-    dq = subs(dqv, qv, q);
+    [qv, dqv] = inv_vel(v)
+    if size(symvar(dqv))
+      q = [2;2;2];
+      dq = subs(dqv, qv, q);
+    else
+      q = wrapToPi(qv)
+      dq = wrapToPi(dqv)
+    end
   end
 
   function [tau] = get_control(t, q, dq)
