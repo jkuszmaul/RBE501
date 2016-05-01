@@ -16,7 +16,7 @@ function [step_fun, kin, jacfun, inv_vel_kin, inv_dyn] = test_model_6dof()
   masses = [1;1;1];
   q = [t1; t2; t3];
   inertias = {eye(3),eye(3),eye(3)};
-
+  B = 0.1;
 
   [poses, vels, jacobians] = get_kin(params, t);
   [inv_dyn, accel] = get_dyn(params, t, masses, inertias);
@@ -46,7 +46,8 @@ function [step_fun, kin, jacfun, inv_vel_kin, inv_dyn] = test_model_6dof()
   end
 
   function [np, nv, na, vabs] = sim_step(p, v, u, dt)
-    na = accel(p, v, u);
+    tau = u - B*v;
+    na = accel(p, v, tau);
     nv = v + na * dt;
     np = p + v * dt + 0.5 * na * dt^2;
     %vabs = subs(jacobians{3}, q, np) * nv;
